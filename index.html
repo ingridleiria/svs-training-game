@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SalesSparx SVS Training Game</title>
+  <!-- Use Avenir if available; fallback to system sans-serif. -->
+  <style>
+    @font-face {
+      /* Attempt to use Avenir if installed on the system. */
+      font-family: 'Avenir';
+      font-style: normal;
+      font-weight: 400;
+      src: local('Avenir'), local('Avenir Book');
+    }
+    :root {
+      /* Brand colour palette as per SalesSparx guide */
+      --color-black: #000000;
+      --color-red: #CA2027;
+      --color-teal: #4CA09A;
+      --color-orange: #ee6c3c;
+      --color-yellow: #FFF33B;
+      --color-dark-teal: #147E76;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Avenir', 'Helvetica Neue', Arial, sans-serif;
+      /* Light neutral background for a modern look */
+      background: #F7F7F7;
+      color: var(--color-black);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    h1, h2, h3, h4 {
+      margin-top: 0;
+      margin-bottom: 0.5em;
+      font-weight: 700;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    /* Screen container */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 1rem;
+      width: 100%;
+      animation: fadeIn 0.5s ease forwards;
+    }
+    .screen.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* General button styling */
+    .btn {
+      padding: 0.6rem 1.2rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--color-red);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    .btn:hover {
+      background-color: var(--color-orange);
+      transform: scale(1.05);
+      color: var(--color-black);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .title {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    /* Home screen */
+    #homeScreen {
+      text-align: center;
+    }
+    /* Quiz screen styles */
+    #quizContainer {
+      width: 100%;
+      max-width: 700px;
+      background-color: #FFFFFF;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      color: var(--color-black);
+    }
+    .quiz-question {
+      margin-bottom: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .option-btn {
+      padding: 0.6rem;
+      border: 2px solid var(--color-red);
+      background-color: #FFFFFF;
+      color: var(--color-black);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+      text-align: left;
+    }
+    .option-btn:hover {
+      background-color: var(--color-red);
+      color: #FFFFFF;
+    }
+    /* Jeopardy board styles */
+    #jeopardyBoard {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .board-grid {
+      display: grid;
+      grid-gap: 2px;
+      background-color: var(--color-red);
+      /* columns will be set dynamically */
+    }
+    .board-header {
+      background-color: var(--color-red);
+      color: #FFFFFF;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .board-cell {
+      background-color: #FFFFFF;
+      color: var(--color-black);
+      padding: 1rem;
+      text-align: center;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      border: 1px solid var(--color-red);
+    }
+    .board-cell.answered {
+      background-color: #F0F0F0;
+      color: #888888;
+      cursor: default;
+    }
+    .board-cell:hover:not(.answered) {
+      background-color: var(--color-orange);
+      color: var(--color-black);
+      transform: translateY(-3px);
+    }
+    /* Modal for Jeopardy question */
+    #modalOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 999;
+    }
+    #modalOverlay.active {
+      display: flex;
+    }
+    #modalContent {
+      background-color: #FFFFFF;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      max-width: 600px;
+      width: 90%;
+      color: var(--color-black);
+    }
+    #modalContent h3 {
+      margin-top: 0;
+    }
+    #modalOptions {
+      margin-top: 1rem;
+    }
+    /* Leaderboard styles */
+    #leaderboardTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    #leaderboardTable th, #leaderboardTable td {
+      border: 1px solid var(--color-red);
+      padding: 0.5rem;
+      text-align: left;
+    }
+    #leaderboardTable th {
+      background-color: var(--color-red);
+      color: #FFFFFF;
+    }
+    #leaderboardTable td {
+      background-color: #FFFFFF;
+      color: var(--color-black);
+    }
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      .board-cell, .board-header {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+      }
+      .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+      }
+    }
+
+    /* Dark theme palette definitions */
+    :root {
+      --color-bg-dark: #0b0c10;
+      --color-surface-dark: #1a1d24;
+      --color-card-dark: #242933;
+    }
+
+    /* Dark theme overrides applied after base styles */
+    body {
+      background: var(--color-bg-dark);
+      color: #ffffff;
+    }
+    /* Inputs use dark backgrounds and teal borders */
+    input[type='text'], input[type='password'] {
+      background-color: var(--color-surface-dark) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--color-teal) !important;
+    }
+    /* Button primary styling */
+    .btn {
+      background-color: var(--color-teal);
+      color: #ffffff;
+    }
+    .btn:hover {
+      background-color: var(--color-orange);
+      color: var(--color-black);
+    }
+    /* Option buttons */
+    .option-btn {
+      border: 2px solid var(--color-teal);
+      background-color: var(--color-surface-dark);
+      color: #ffffff;
+    }
+    .option-btn:hover {
+      background-color: var(--color-teal);
+      color: var(--color-black);
+    }
+    /* Card containers */
+    #quizContainer,
+    #modalContent,
+    #adminLoginContainer {
+      background-color: var(--color-card-dark);
+      color: #ffffff;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+    }
+    /* Jeopardy board and cells */
+    .board-grid {
+      background-color: var(--color-teal);
+    }
+    .board-header {
+      background-color: var(--color-teal);
+      color: #ffffff;
+    }
+    .board-cell {
+      background-color: var(--color-surface-dark);
+      color: #ffffff;
+      border: 1px solid var(--color-teal);
+    }
+    .board-cell.answered {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: #888888;
+    }
+    .board-cell:hover:not(.answered) {
+      background-color: var(--color-teal);
+      color: var(--color-black);
+    }
+    /* Leaderboard table styling */
+    #leaderboardTable th {
+      background-color: var(--color-teal);
+      color: #ffffff;
+    }
+    #leaderboardTable td {
+      background-color: var(--color-surface-dark);
+      color: #ffffff;
+    }
+    #leaderboardTable {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    #leaderboardTable th, #leaderboardTable td {
+      border: none;
+      padding: 0.5rem;
+    }
+
+    /* Home page grid layout and cards */
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .home-card {
+      background-color: var(--color-card-dark);
+      border: 1px solid var(--color-dark-teal);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      color: #ffffff;
+      text-align: left;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .home-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+    .home-card h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+    }
+    .home-card p {
+      margin: 0;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <div id="homeScreen" class="screen active">
+    <div class="title">
+      <h1>SalesSparx SVS Training Game</h1>
+      <p class="subtitle">Strengthen your SVS knowledge through interactive play</p>
+    </div>
+    <div style="margin-bottom:1rem; text-align:center;">
+      <label for="playerNameInput" style="display:block; margin-bottom:0.3rem;">Enter your name:</label>
+      <input id="playerNameInput" type="text" placeholder="Your name" style="padding:0.5rem; border-radius:6px; border:1px solid var(--color-teal); width:200px; background-color: var(--color-surface-dark); color: #ffffff;" />
+    </div>
+    <div class="home-grid">
+      <!-- Interactive learning card: combines general quiz and learning paths -->
+      <div class="home-card">
+        <h3>Interactive Learning 🎓</h3>
+        <p>Select a quiz or learning path tailored to your needs.</p>
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+          <select id="modeSelect" style="padding:0.5rem; border-radius:6px; border:1px solid var(--color-teal); background-color: var(--color-surface-dark); color:#ffffff;">
+            <option value="GeneralQuiz">General Quiz</option>
+            <option value="Discovery">Discovery Path</option>
+            <option value="Ideation">Ideation Path</option>
+            <option value="Negotiation">Negotiation Path</option>
+            <option value="Partnership">Partnership Path</option>
+            <option value="FUSE">FUSE Path</option>
+            <option value="SVS8">SVS 8 Path</option>
+            <option value="Qualification">Qualification Path</option>
+          </select>
+          <button class="btn" id="startSelectedBtn">Start</button>
+        </div>
+      </div>
+      <!-- Game show card for Jeopardy -->
+      <div class="home-card">
+        <h3>Game Show 🎮</h3>
+        <p>Test your knowledge across all modules in our Jeopardy‑style challenge.</p>
+        <button class="btn" id="startJeopardyBtn">Play</button>
+      </div>
+      <!-- Role‑play simulation card -->
+      <div class="home-card">
+        <h3>Role‑Play Simulation 🎭</h3>
+        <p>Immerse yourself in a realistic healthcare sales scenario.</p>
+        <button class="btn" id="startRolePlayBtn">Begin</button>
+      </div>
+      <!-- Leaderboard/Admin card -->
+      <div class="home-card">
+        <h3>Admin / Leaderboard 🔐</h3>
+        <p>Admins can view learner progress and results.</p>
+        <button class="btn" id="viewLeaderboardBtn">Admin Login</button>
+      </div>
+
+      <!-- Learner dashboard card -->
+      <div class="home-card">
+        <h3>My Dashboard 📊</h3>
+        <p>Track your completed quizzes, learning paths and scores.</p>
+        <button class="btn" id="dashboardBtn">View Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz Mode Screen -->
+  <div id="quizScreen" class="screen">
+    <div id="quizContainer">
+      <h2 id="quizHeader">Quiz Mode</h2>
+      <!-- Progress bar for tracking completion -->
+      <div id="progressBarContainer" style="width:100%; background-color: var(--color-surface-dark); height: 8px; border-radius: 4px; margin-bottom: 0.75rem;">
+        <div id="progressBar" style="height:100%; width:0%; background-color: var(--color-yellow); border-radius:4px;"></div>
+      </div>
+      <!-- Dashboard showing score and progress -->
+      <div id="quizDashboard" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; font-weight:600;">
+        <div>Score: <span id="quizScoreDisplay">0</span></div>
+        <div>Progress: <span id="quizProgressDisplay">0/0</span></div>
+      </div>
+      <!-- Narrative text for role play scenarios -->
+      <div id="quizNarrative" class="quiz-narrative" style="font-style: italic; margin-bottom: 0.75rem;"></div>
+      <div id="quizProgress" style="margin-bottom: 0.5rem;"></div>
+      <div class="quiz-question" id="quizQuestion"></div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div id="quizFeedback" style="margin-top: 0.5rem; min-height: 2rem;"></div>
+      <button class="btn" id="nextQuizBtn" style="display:none;">Next</button>
+      <button class="btn" id="quitQuizBtn">Quit Quiz</button>
+    </div>
+  </div>
+
+  <!-- Jeopardy Mode Screen -->
+  <div id="jeopardyScreen" class="screen">
+    <h2>SVS Jeopardy</h2>
+    <div id="playerInfo" style="margin-bottom:0.5rem;"></div>
+    <div id="jeopardyBoard"></div>
+    <div style="margin-top:0.5rem;">
+      <span id="jeopardyScore">Score: 0</span>
+      <button class="btn" id="quitJeopardyBtn" style="margin-left:1rem;">Quit Game</button>
+    </div>
+  </div>
+
+  <!-- Modal for Jeopardy questions -->
+  <div id="modalOverlay">
+    <div id="modalContent">
+      <h3 id="modalQuestion"></h3>
+      <div id="modalOptions" class="quiz-options"></div>
+      <div id="modalFeedback" style="margin-top:0.5rem; min-height:2rem;"></div>
+      <button class="btn" id="modalNextBtn" style="display:none;">Close</button>
+    </div>
+  </div>
+
+  <!-- Leaderboard Screen -->
+  <div id="leaderboardScreen" class="screen">
+    <h2>Learner Leaderboard</h2>
+    <table id="leaderboardTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Mode</th>
+          <th>Result</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody">
+        <!-- rows inserted by JS -->
+      </tbody>
+    </table>
+    <button class="btn" id="backHomeBtn">Back to Home</button>
+  </div>
+
+  <!-- Learner Dashboard Screen -->
+  <div id="dashboardScreen" class="screen">
+    <h2>My Dashboard</h2>
+    <div id="dashboardContainer" style="width:100%; max-width:700px; background-color: var(--color-card-dark); padding:1.5rem; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.6); color:#ffffff;">
+      <p id="dashboardMessage" style="margin-bottom:0.75rem;"></p>
+      <table id="dashboardTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem; display:none;">
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>Result</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="dashboardBody">
+        </tbody>
+      </table>
+      <button class="btn" id="dashboardBackBtn">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- Admin Login Screen (hidden until needed) -->
+  <div id="adminLoginScreen" class="screen">
+    <h2>Admin Login</h2>
+    <div id="adminLoginContainer" style="width:100%; max-width:400px; background-color: var(--color-card-dark); padding:2rem; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.8); color: #ffffff;">
+      <div style="margin-bottom:0.5rem;">
+        <label for="adminUsername">Username</label><br />
+        <input id="adminUsername" type="text" style="width:100%; padding:0.5rem; margin-top:0.25rem; border-radius:4px; border:1px solid var(--color-teal); background-color:#1a1a1a; color:#ffffff;" />
+      </div>
+      <div style="margin-bottom:0.5rem;">
+        <label for="adminPassword">Password</label><br />
+        <input id="adminPassword" type="password" style="width:100%; padding:0.5rem; margin-top:0.25rem; border-radius:4px; border:1px solid var(--color-teal); background-color:#1a1a1a; color:#ffffff;" />
+      </div>
+      <p id="loginError" style="color: var(--color-red); min-height: 1.2rem;"></p>
+      <div style="display:flex; justify-content:space-between; gap:1rem;">
+        <button class="btn" id="adminLoginBtn" style="flex:1;">Login</button>
+        <button class="btn" id="adminCancelBtn" style="flex:1;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    /*
+     * SalesSparx SVS Training Game
+     * All logic is encapsulated inside an immediately invoked function
+     * to avoid polluting the global scope. The application runs entirely
+     * on the client using HTML, CSS and JavaScript.
+     */
+    (function() {
+      'use strict';
+
+      /** Utility functions **/
+      // Fisher–Yates shuffle for randomizing arrays
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      // Shuffle options within a question and adjust the answer index accordingly.
+      // This ensures the correct answer isn’t always in the first position.
+      function shuffleQuestionOptions(question) {
+        // Only randomize if options exist (true/false questions lack explicit options)
+        if (!question || !Array.isArray(question.options)) return question;
+        const originalOpts = question.options.slice();
+        const indices = originalOpts.map((_, idx) => idx);
+        shuffle(indices);
+        const newOptions = indices.map(i => originalOpts[i]);
+        const newAnswerIndex = indices.indexOf(question.answer);
+        return Object.assign({}, question, {
+          options: newOptions,
+          answer: newAnswerIndex
+        });
+      }
+
+      // Format date as human-friendly string
+      function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+      }
+
+      // Helper to show a screen and hide others
+      function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(scr => {
+          scr.classList.remove('active');
+        });
+        const screen = document.getElementById(screenId);
+        if (screen) screen.classList.add('active');
+      }
+
+      // Data definitions
+      const modules = [
+        {
+          name: 'Awareness',
+          clues: [
+            // Answers are intentionally not always the first option to avoid predictable patterns
+            {
+              value: 100,
+              question: 'What is the primary goal of the Awareness stage?',
+              // Correct answer is in position 2
+              options: [
+                'To close the deal immediately.',
+                'To negotiate pricing upfront.',
+                'To create awareness of our solution among prospects.',
+                'To deliver final proposal.'
+              ],
+              answer: 2
+            },
+            {
+              value: 200,
+              question: 'In Awareness, marketing collateral should emphasize…',
+              // Correct answer is in position 1
+              options: [
+                'Detailed pricing structure.',
+                'Value and differentiation.',
+                'Implementation specifics.',
+                'Final contract terms.'
+              ],
+              answer: 1
+            },
+            {
+              value: 300,
+              question: 'Which metric best measures success in the Awareness stage?',
+              // Correct answer is in position 2
+              options: [
+                'Number of signed contracts.',
+                'Average discount offered.',
+                'Number of qualified leads generated.',
+                'Number of renewals.'
+              ],
+              answer: 2
+            },
+            {
+              value: 400,
+              question: 'During Awareness, we should focus on building brand…',
+              // Correct answer is in position 1
+              options: [
+                'Pricing packages.',
+                'Credibility and trust.',
+                'Final contract.',
+                'Implementation plan.'
+              ],
+              answer: 1
+            },
+            {
+              value: 500,
+              question: 'The Awareness stage helps identify…',
+              // Correct answer is in position 1
+              options: [
+                'Implementation timelines.',
+                'Potential customers who may benefit from our solutions.',
+                'The final negotiated price.',
+                'Post‑sale service issues.'
+              ],
+              answer: 1
+            }
+          ]
+        },
+        {
+          name: 'Qualification',
+          clues: [
+            {
+              value: 100,
+              question: 'Main purpose of Qualification stage?',
+              // Correct answer is in position 1
+              options: [
+                'Deliver product training.',
+                'Assess fit and potential value.',
+                'Finalize contract.',
+                'Create marketing materials.'
+              ],
+              answer: 1
+            },
+            {
+              value: 200,
+              question: "In Qualification, we verify prospect's ability to…",
+              // Correct answer is in position 2
+              options: [
+                'Manage project implementation.',
+                'Evaluate our competitors.',
+                'Buy based on budget, authority, need, and timeline.',
+                'Provide testimonials.'
+              ],
+              answer: 2
+            },
+            {
+              value: 300,
+              question: 'Effective qualification includes asking about…',
+              // Correct answer is in position 2
+              options: [
+                'Contract renewal cycle.',
+                'Implementation training schedule.',
+                'Pain points and decision‑making process.',
+                'Logistics of delivery.'
+              ],
+              answer: 2
+            },
+            {
+              value: 400,
+              question: 'Qualification prevents us from pursuing deals that are…',
+              // Correct answer is in position 2
+              options: [
+                'Highly profitable.',
+                'Already sold to competitors.',
+                'Unlikely to close.',
+                'Too small to matter.'
+              ],
+              answer: 2
+            },
+            {
+              value: 500,
+              question: 'Qualification ensures that sales efforts are aligned with…',
+              // Correct answer is in position 1
+              options: [
+                'Implementation teams.',
+                'Prospects who have real need and interest.',
+                'Customer success metrics.',
+                'Marketing budgets.'
+              ],
+              answer: 1
+            }
+          ]
+        },
+        {
+          name: 'Discovery',
+          clues: [
+            {
+              value: 100,
+              question: 'Goal of Discovery stage?',
+              // Correct answer at position 1
+              options: [
+                'Close the sale quickly.',
+                'Understand needs before offering solutions.',
+                'Negotiate the price.',
+                'Deliver final product.'
+              ],
+              answer: 1
+            },
+            {
+              value: 200,
+              question: 'Discovery often involves asking…',
+              // Correct answer at position 0 (already varied by random shuffle)
+              options: [
+                'Open‑ended questions.',
+                'Yes/no questions.',
+                'Only rhetorical questions.',
+                'Questions about competitor pricing.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: "During Discovery, it's important to identify the prospect's…",
+              // Correct answer at position 1
+              options: [
+                'Favorite color.',
+                'Challenges and desired outcomes.',
+                'Annual holidays.',
+                'Office décor.'
+              ],
+              answer: 1
+            },
+            {
+              value: 400,
+              question: 'Discovery helps build…',
+              // Correct answer at position 2
+              options: [
+                'Legal contracts.',
+                'Budget spreadsheets.',
+                'Trust and rapport.',
+                'Implementation timelines.'
+              ],
+              answer: 2
+            },
+            {
+              value: 500,
+              question: 'Successful Discovery leads to…',
+              // Correct answer at position 1
+              options: [
+                'Quick closing discounts.',
+                'Tailored solutions that meet customer needs.',
+                'Standardized generic proposals.',
+                'Product giveaways.'
+              ],
+              answer: 1
+            }
+          ]
+        },
+        {
+          name: 'Ideation',
+          clues: [
+            {
+              value: 100,
+              question: 'Ideation stage focuses on…',
+              // Correct answer in position 0 for variety
+              options: [
+                'Co‑creating solutions with the prospect.',
+                'Delivering the final contract.',
+                'Setting implementation dates.',
+                'Auditing budgets.'
+              ],
+              answer: 0
+            },
+            {
+              value: 200,
+              question: 'In Ideation, we brainstorm ideas that…',
+              // Correct answer at position 0
+              options: [
+                'Address the customer\'s challenges.',
+                'Increase prices arbitrarily.',
+                'Delay decisions.',
+                'Reduce scope.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: 'Ideation encourages collaboration to…',
+              // Correct answer at position 0
+              options: [
+                'Generate mutually beneficial options.',
+                'Terminate negotiations.',
+                'Exclude stakeholders.',
+                'Push a single solution.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: 'Key outcome of Ideation is a…',
+              // Correct answer at position 0
+              options: [
+                'Shared vision of the solution.',
+                'Final signed contract.',
+                'Completed implementation.',
+                'Cancellation notice.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: 'During Ideation, both parties should feel…',
+              // Correct answer at position 0
+              options: [
+                'Ownership of the proposed approach.',
+                'Distrustful.',
+                'Disconnected.',
+                'Uninformed.'
+              ],
+              answer: 0
+            }
+          ]
+        },
+        {
+          name: 'Proposal',
+          clues: [
+            {
+              value: 100,
+              question: 'The Proposal stage converts ideas into…',
+              // Correct answer at position 1
+              options: [
+                'A brainstorming session.',
+                'A formal offering.',
+                'A marketing slogan.',
+                'A new challenge.'
+              ],
+              answer: 1
+            },
+            {
+              value: 200,
+              question: 'A strong proposal clearly articulates…',
+              // Correct answer at position 1
+              options: [
+                'Office seating assignments.',
+                'Value, scope, and pricing.',
+                'Employee benefits.',
+                'Stock market trends.'
+              ],
+              answer: 1
+            },
+            {
+              value: 300,
+              question: 'Proposals should be tailored to…',
+              // Correct answer at position 0
+              options: [
+                'Address the prospect\'s specific needs.',
+                'Fit every potential customer.',
+                'Focus on internal policies only.',
+                'Offer the lowest price always.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: 'In proposals, highlight how your solution…',
+              // Correct answer at position 0
+              options: [
+                'Aligns with business goals.',
+                'Avoids any customization.',
+                'Ignores the prospect\'s objectives.',
+                'Minimizes communication.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: 'Timing of proposal presentation should be…',
+              // Correct answer at position 0
+              options: [
+                'When stakeholders are ready to evaluate.',
+                'Immediately after the first meeting.',
+                'Only after negotiation.',
+                'Right before contract signing.'
+              ],
+              answer: 0
+            }
+          ]
+        },
+        {
+          name: 'Negotiation',
+          clues: [
+            {
+              value: 100,
+              question: 'Negotiation aims to reach a…',
+              // Correct answer at position 0
+              options: [
+                'Win‑win agreement.',
+                'One‑sided victory.',
+                'Quick handshake.',
+                'No compromise.'
+              ],
+              answer: 0
+            },
+            {
+              value: 200,
+              question: 'Effective negotiation involves listening to…',
+              // Correct answer at position 0
+              options: [
+                'Concerns and finding common ground.',
+                'Gossip about competitors.',
+                'Only your own perspective.',
+                'Irrelevant anecdotes.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: 'During negotiation, you should remain…',
+              // Correct answer at position 0
+              options: [
+                'Flexible and value‑focused.',
+                'Rigid and uncompromising.',
+                'Disinterested.',
+                'Uninformed.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: 'Concessions in negotiation should be…',
+              // Correct answer at position 0
+              options: [
+                'Balanced and strategically offered.',
+                'Randomly given away.',
+                'Entirely avoided.',
+                'Unrecorded.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: 'A successful negotiation results in…',
+              // Correct answer at position 0
+              options: [
+                'An agreement satisfying both parties.',
+                'A stalemate.',
+                'A canceled deal.',
+                'Continuous arguments.'
+              ],
+              answer: 0
+            }
+          ]
+        },
+        {
+          name: 'Partnership',
+          clues: [
+            {
+              value: 100,
+              question: 'Partnership stage focuses on…',
+              // Correct answer at position 0
+              options: [
+                'Building long‑term relationship.',
+                'Ending communication.',
+                'Reducing support.',
+                'Limiting updates.'
+              ],
+              answer: 0
+            },
+            {
+              value: 200,
+              question: 'Delivering on promises is crucial to…',
+              // Correct answer at position 0
+              options: [
+                'Customer satisfaction.',
+                'Decreasing trust.',
+                'Raising suspicion.',
+                'Postponing service.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: 'Partnership allows for…',
+              // Correct answer at position 0
+              options: [
+                'Upselling and cross‑selling opportunities.',
+                'Avoiding customer contact.',
+                'Ignoring feedback.',
+                'Minimizing value.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: 'Regular check‑ins help…',
+              // Correct answer at position 0
+              options: [
+                'Ensure continued value delivery.',
+                'Waste time.',
+                'Delay solutions.',
+                'Overlook progress.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: 'Strong partnerships lead to…',
+              // Correct answer at position 0
+              options: [
+                'Customer loyalty and referrals.',
+                'Frequent complaints.',
+                'Loss of revenue.',
+                'Decreased engagement.'
+              ],
+              answer: 0
+            }
+          ]
+        },
+        {
+          name: 'SVS 8',
+          clues: [
+            {
+              value: 100,
+              question: 'SVS 8 emphasizes…',
+              // Correct answer at position 0
+              options: [
+                'Expanding and renewing the relationship.',
+                'Closing the door on new opportunities.',
+                'Cutting budgets.',
+                'Ignoring performance metrics.'
+              ],
+              answer: 0
+            },
+            {
+              value: 200,
+              question: 'Monitoring success metrics supports…',
+              // Correct answer at position 0
+              options: [
+                'Long‑term growth with the customer.',
+                'Reducing service quality.',
+                'Short‑term thinking.',
+                'Halting collaboration.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: 'In SVS 8, we explore new…',
+              // Correct answer at position 0
+              options: [
+                'Opportunities for collaboration.',
+                'Reasons to disengage.',
+                'Unrelated markets.',
+                'Random prospects.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: 'Continuous improvement in SVS 8 means…',
+              // Correct answer at position 0
+              options: [
+                'Adapting to evolving needs.',
+                'Maintaining outdated processes.',
+                'Ignoring feedback.',
+                'Avoiding innovation.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: 'SVS 8 ensures that the partnership is…',
+              // Correct answer at position 0
+              options: [
+                'Sustainable and mutually beneficial.',
+                'One‑sided and unsustainable.',
+                'Temporary and transactional.',
+                'Overcomplicated.'
+              ],
+              answer: 0
+            }
+          ]
+        },
+        {
+          name: 'FUSE',
+          clues: [
+            {
+              value: 100,
+              question: 'FUSE framework is used to…',
+              // Correct answer at position 0
+              options: [
+                'Guide consultative conversations.',
+                'Schedule vacations.',
+                'Determine salaries.',
+                'Manage inventory.'
+              ],
+              answer: 0
+            },
+            {
+              value: 200,
+              question: "The 'F' in FUSE stands for…",
+              // Correct answer at position 0
+              options: [
+                'Fuel the discussion.',
+                'Forget the problem.',
+                'Finalize the contract.',
+                'Forecast revenue.'
+              ],
+              answer: 0
+            },
+            {
+              value: 300,
+              question: "The 'U' in FUSE refers to…",
+              // Correct answer at position 0
+              options: [
+                'Uncovering needs.',
+                'Undoing agreements.',
+                'Upgrading equipment.',
+                'Uniting legal teams.'
+              ],
+              answer: 0
+            },
+            {
+              value: 400,
+              question: "The 'S' in FUSE involves…",
+              // Correct answer at position 0
+              options: [
+                'Solving with tailored solutions.',
+                'Selling at a discount.',
+                'Separating from the customer.',
+                'Sending generic emails.'
+              ],
+              answer: 0
+            },
+            {
+              value: 500,
+              question: "The 'E' in FUSE stands for…",
+              // Correct answer at position 0
+              options: [
+                'Engaging and executing the plan.',
+                'Escaping responsibility.',
+                'Excluding stakeholders.',
+                'Ending communication.'
+              ],
+              answer: 0
+            }
+          ]
+        }
+      ];
+
+      // Quiz questions (true/false, multiple choice, scenario) with explanations
+      const quizQuestions = [
+        {
+          module: 'Discovery',
+          type: 'trueFalse',
+          question: 'In Discovery, our goal is to understand needs before offering solutions.',
+          answer: true,
+          explanation: 'The Discovery stage is all about learning the customer\'s needs to tailor the solution.',
+        },
+        {
+          module: 'Qualification',
+          type: 'multiple',
+          question: 'What does BANT stand for in Qualification?',
+          options: ['Budget, Authority, Need, Timeline', 'Business, Advantage, Negotiation, Timing', 'Background, Assessment, Negotiation, Territory', 'Budget, Accountability, Negotiation, Terms'],
+          answer: 0,
+          explanation: 'BANT stands for Budget, Authority, Need and Timeline.',
+        },
+        {
+          module: 'Awareness',
+          type: 'scenario',
+          question: 'You\'re attending a trade show to generate interest in a new product. Which SVS stage are you engaging in?',
+          options: ['Awareness', 'Proposal', 'Negotiation', 'Partnership'],
+          answer: 0,
+          explanation: 'Trade shows build awareness among prospects and are part of the Awareness stage.',
+        },
+        {
+          module: 'Ideation',
+          type: 'multiple',
+          question: 'Ideation is best described as:',
+          options: ['Co‑creating solutions with the customer', 'Presenting final contract', 'Negotiating price', 'Delivering training'],
+          answer: 0,
+          explanation: 'Ideation involves brainstorming together to generate creative solutions that address customer needs.',
+        },
+        {
+          module: 'Proposal',
+          type: 'trueFalse',
+          question: 'Proposals should be the same for every prospect to save time.',
+          answer: false,
+          explanation: 'Proposals need to be tailored to each prospect\'s specific needs to be effective.',
+        },
+        {
+          module: 'Negotiation',
+          type: 'scenario',
+          question: 'A customer requests a lower price. You explore adjusting payment terms instead. This is an example of:',
+          options: ['Negotiation', 'Ideation', 'Awareness', 'FUSE'],
+          answer: 0,
+          explanation: 'Negotiation includes discussing alternative terms to reach a mutually beneficial agreement.',
+        },
+        {
+          module: 'Partnership',
+          type: 'trueFalse',
+          question: 'Regular check-ins with customers are unnecessary once the deal is closed.',
+          answer: false,
+          explanation: 'Check-ins help ensure continued value delivery and foster a long-term partnership.',
+        },
+        {
+          module: 'SVS 8',
+          type: 'multiple',
+          question: "Which action aligns with SVS 8's focus on expansion?",
+          options: ['Identifying opportunities to upsell new services', 'Terminating the contract', 'Ignoring customer feedback', 'Focusing solely on new customers'],
+          answer: 0,
+          explanation: 'SVS 8 encourages exploring additional opportunities within existing relationships.',
+        },
+        {
+          module: 'FUSE',
+          type: 'multiple',
+          question: "What does the 'S' in FUSE stand for?",
+          options: ['Solve with tailored solutions', 'Sell additional products', 'Simplify contract terms', 'Sustain profitability'],
+          answer: 0,
+          explanation: "In the FUSE model, 'S' represents Solving with tailored solutions.",
+        }
+        ,
+        // Additional questions to introduce true/false and "find the incorrect" formats
+        {
+          module: 'General',
+          type: 'trueFalse',
+          question: 'All SVS stages are designed to close deals as quickly as possible.',
+          answer: false,
+          explanation: 'Shared Vision Selling focuses on understanding needs and co‑creating value, not rushing to close.',
+        },
+        {
+          module: 'General',
+          type: 'multiple',
+          question: 'Which of the following is NOT part of the standard SVS stages?',
+          options: ['Implementation', 'Discovery', 'Ideation', 'Proposal'],
+          answer: 0,
+          explanation: 'Implementation is not one of the SVS stages; SVS ends with Partnership before moving into maturity and FUSE.',
+        }
+      ];
+
+      // Learning paths containing role‑play scenario questions to guide users through key SVS stages.
+      // Each path is a list of concise scenarios with multiple choices and explanations.
+      const learningPaths = {
+        // Discovery learning path with 10 questions focusing on understanding needs, developing coaches and exit criteria
+        Discovery: [
+          {
+            question: 'What is the main goal of the Discovery stage?',
+            options: ['Understand current and desired future state', 'Close the deal', 'Negotiate price', 'Deliver final proposal'],
+            answer: 0,
+            explanation: 'Discovery seeks to uncover where the buyer is today and where they want to be before discussing solutions.'
+          },
+          {
+            question: 'Which type of question is most effective during Discovery?',
+            options: ['Open‑ended', 'Closed yes/no', 'Leading', 'Rhetorical'],
+            answer: 0,
+            explanation: 'Open‑ended questions encourage prospects to share detailed information about their challenges and goals.'
+          },
+          {
+            question: 'Developing a coach during Discovery helps you…',
+            options: ['Gain internal advocacy and insight', 'Avoid involving other stakeholders', 'Focus only on price', 'Skip qualification'],
+            answer: 0,
+            explanation: 'A coach champions your solution internally and provides guidance on the buying process.'
+          },
+          {
+            question: 'Understanding the decision process and criteria allows you to…',
+            options: ['Align your approach and timeline', 'Deliver contract quickly', 'Focus on features only', 'Delay negotiations'],
+            answer: 0,
+            explanation: 'Knowing how decisions are made ensures you meet the right requirements at the right time.'
+          },
+          {
+            question: 'Quantifying economic value during Discovery provides…',
+            options: ['A business case for change', 'Accurate final pricing', 'Technical specifications', 'Competitive analysis'],
+            answer: 0,
+            explanation: 'Quantifying value demonstrates the financial impact of addressing the prospect’s pain points.'
+          },
+          {
+            question: 'The “Why Now” in the 3 Whys addresses…',
+            options: ['Urgency to solve the problem', 'Company’s history', 'Budget authority', 'Team size'],
+            answer: 0,
+            explanation: 'Why Now explains the compelling reasons the prospect should act sooner rather than later.'
+          },
+          {
+            question: 'During Discovery, you should probe into current pain points and…',
+            options: ['Desired future state', 'Legal contracts', 'Price discounts', 'Competitor weaknesses'],
+            answer: 0,
+            explanation: 'Understanding where the buyer wants to go helps you propose a relevant solution later.'
+          },
+          {
+            question: 'A red flag during Discovery is when…',
+            options: ['Stakeholders are unclear about their needs and timeline', 'They agree to meet', 'They share their challenges', 'They express interest'],
+            answer: 0,
+            explanation: 'If key stakeholders can’t articulate needs or timing, qualification is weak and may require more work.'
+          },
+          {
+            question: 'Discovery exit criteria include…',
+            options: ['Documented pain, decision criteria, and next steps', 'Signed contract', 'Implementation schedule', 'Training plan'],
+            answer: 0,
+            explanation: 'Before leaving Discovery you should capture pain points, decision criteria and agree on next steps.'
+          },
+          {
+            question: 'Best practice after a Discovery call is to…',
+            options: ['Summarize learnings and confirm next steps with the buyer', 'Send a contract immediately', 'Negotiate price', 'Stop communication until they respond'],
+            answer: 0,
+            explanation: 'Confirming what you heard and outlining agreed next steps shows professionalism and keeps momentum.'
+          }
+        ],
+        // Qualification path remains available for reference; it contains fewer questions
+        Qualification: [
+          {
+            question: 'A lead has expressed interest but hasn\'t provided a timeline. What is your next step?',
+            options: ['Ask when they plan to decide.', 'Send a contract right away.', 'Offer a discount.', 'End the conversation.'],
+            answer: 0,
+            explanation: 'Qualifying includes understanding the prospect\'s timeline to gauge readiness.',
+          },
+          {
+            question: 'You learn that your contact loves your solution but lacks buying authority. What should you do?',
+            options: ['Ask to meet the decision maker.', 'Ignore the issue.', 'Start negotiating price.', 'Send marketing brochures only.'],
+            answer: 0,
+            explanation: 'A qualified opportunity must include access to decision makers; request to involve them.',
+          }
+        ],
+        // Ideation learning path with 10 questions emphasising collaboration, transformation and value
+        Ideation: [
+          {
+            question: 'What is the purpose of the Ideation stage?',
+            options: ['Collaborate on solutions and transition roadmap', 'Close the deal', 'Discuss pricing', 'Collect signatures'],
+            answer: 0,
+            explanation: 'Ideation is about working with the buyer to design the path to the desired future state.'
+          },
+          {
+            question: 'In Ideation, the buyer should feel…',
+            options: ['Ownership of the solution', 'Excluded', 'Pressured', 'Uninformed'],
+            answer: 0,
+            explanation: 'Shared ownership builds commitment and confidence in the proposed solution.'
+          },
+          {
+            question: 'Which deliverable often results from Ideation?',
+            options: ['Transition roadmap with milestones', 'Signed contract', 'Final pricing', 'Technical support ticket'],
+            answer: 0,
+            explanation: 'A clear roadmap outlines steps to move from current state to future state.'
+          },
+          {
+            question: 'Reinforcing the 3 Whys during Ideation means…',
+            options: ['Connecting ideas back to pain, value and urgency', 'Discussing only budget', 'Neglecting the buyer’s input', 'Focusing on your company only'],
+            answer: 0,
+            explanation: 'Ideas should clearly address why the buyer should act, why your solution and why now.'
+          },
+          {
+            question: 'Transforming your coach to a champion requires…',
+            options: ['Building credibility and equipping them with a compelling story', 'Ignoring them', 'Negotiating price early', 'Avoiding information sharing'],
+            answer: 0,
+            explanation: 'A champion will advocate for your solution internally if you enable and empower them.'
+          },
+          {
+            question: 'Which technique encourages collaboration?',
+            options: ['Co‑creating future state scenarios with the buyer', 'Dictating a solution unilaterally', 'Sending a brochure', 'Postponing brainstorming'],
+            answer: 0,
+            explanation: 'Co‑creation engages the buyer in designing the solution so they feel invested.'
+          },
+          {
+            question: 'Ideation inputs primarily come from…',
+            options: ['Discovery outputs such as pain points and desired outcomes', 'Marketing materials', 'Pricing spreadsheets', 'Legal terms'],
+            answer: 0,
+            explanation: 'Information gathered in Discovery feeds into the Ideation discussions.'
+          },
+          {
+            question: 'Meeting decision criteria during Ideation involves…',
+            options: ['Ensuring proposed ideas address buyer’s defined success measures', 'Negotiating contract length', 'Discussing support terms only', 'Ignoring procurement rules'],
+            answer: 0,
+            explanation: 'Each idea should map to the buyer’s evaluation criteria to stay relevant.'
+          },
+          {
+            question: 'Buyer/seller collaboration fosters…',
+            options: ['Trust and deeper engagement', 'Confusion', 'Delay', 'Increased discount demands'],
+            answer: 0,
+            explanation: 'Working together strengthens relationships and encourages buy‑in.'
+          },
+          {
+            question: 'A common mistake in Ideation is…',
+            options: ['Focusing solely on features instead of buyer value', 'Encouraging joint problem solving', 'Building a business case', 'Aligning on timeline'],
+            answer: 0,
+            explanation: 'It’s critical to frame solutions in terms of outcomes rather than just technical features.'
+          }
+        ],
+        // Negotiation learning path with 10 questions focusing on win‑win strategies and value based negotiation
+        Negotiation: [
+          {
+            question: 'The goal of the Negotiation stage is to…',
+            options: ['Develop a win‑win agreement aligned with value delivered', 'Lower price as much as possible', 'End discovery quickly', 'Avoid contract discussions'],
+            answer: 0,
+            explanation: 'Negotiation seeks agreements that reflect the value created for both buyer and seller.'
+          },
+          {
+            question: 'When a buyer raises a price objection, you should…',
+            options: ['Refocus on outcomes and ROI', 'Immediately discount heavily', 'Ignore their concerns', 'Delay responding'],
+            answer: 0,
+            explanation: 'Reframing the conversation around value often resolves price concerns.'
+          },
+          {
+            question: 'Preventing final objections is achieved by…',
+            options: ['Addressing concerns proactively throughout the process', 'Avoiding difficult questions', 'Changing the scope last minute', 'Rushing to close'],
+            answer: 0,
+            explanation: 'Anticipating and handling objections early prevents surprises later.'
+          },
+          {
+            question: 'A negotiation strategy should emphasise…',
+            options: ['Buyer value vs price', 'Competition’s weaknesses', 'Your need to close quickly', 'Silence'],
+            answer: 0,
+            explanation: 'Focusing on value helps justify your terms and maintains trust.'
+          },
+          {
+            question: 'Key inputs to negotiation include…',
+            options: ['Outputs of the Proposal stage (solution details and business case)', 'Marketing qualified leads', 'Implementation schedule', 'Support tickets'],
+            answer: 0,
+            explanation: 'A clear proposal and business case set the stage for a productive negotiation.'
+          },
+          {
+            question: 'Assumptive, option, suggestion and urgency are types of…',
+            options: ['Negotiation tactics', 'Pricing tiers', 'Contract clauses', 'Delivery schedules'],
+            answer: 0,
+            explanation: 'Different tactics can be employed to guide the conversation toward a win‑win outcome.'
+          },
+          {
+            question: 'During negotiation, when should you walk away?',
+            options: ['When the agreement would compromise value or viability', 'Whenever a buyer requests a concession', 'At the first objection', 'After the proposal'],
+            answer: 0,
+            explanation: 'It’s appropriate to step back if terms undermine mutual value or risk success.'
+          },
+          {
+            question: 'Focusing on buyer value vs price means…',
+            options: ['Quantifying benefits and ROI rather than discounts', 'Offering a flat 30% discount', 'Highlighting competitor pricing', 'Ignoring value proposition'],
+            answer: 0,
+            explanation: 'Emphasising outcomes helps maintain price integrity and satisfaction.'
+          },
+          {
+            question: 'What helps maintain trust in negotiation?',
+            options: ['Transparency and consistency with earlier commitments', 'Surprising the buyer with hidden fees', 'Changing terms last minute', 'Pushing urgent closing'],
+            answer: 0,
+            explanation: 'Honesty and reliability build long‑term relationships.'
+          },
+          {
+            question: 'Closing the negotiation successfully requires…',
+            options: ['Alignment on terms, scope and timing with all stakeholders', 'Pressure tactics', 'Personal incentives', 'Delaying contract drafting'],
+            answer: 0,
+            explanation: 'Everyone must agree on the solution and terms before signing.'
+          }
+        ],
+        // Partnership learning path with 10 questions focusing on post‑sale success and relationship building
+        Partnership: [
+          {
+            question: 'When does the Partnership stage begin?',
+            options: ['Immediately after contract signature', 'During Discovery', 'Before Qualification', 'During Ideation'],
+            answer: 0,
+            explanation: 'Partnership starts once the agreement is signed and the real work of delivering value begins.'
+          },
+          {
+            question: 'A primary objective of the Partnership stage is to…',
+            options: ['Ensure solution adoption and buyer success', 'Negotiate final pricing', 'Qualify the buyer', 'Deliver marketing materials'],
+            answer: 0,
+            explanation: 'Adoption and success drive retention and future growth opportunities.'
+          },
+          {
+            question: 'Quarterly Business Reviews (QBRs) help to…',
+            options: ['Maintain alignment, measure outcomes, and identify new opportunities', 'Finalize negotiations', 'Train new employees', 'Close support tickets'],
+            answer: 0,
+            explanation: 'Regular reviews reinforce value and uncover ways to expand the relationship.'
+          },
+          {
+            question: 'Solution adoption means…',
+            options: ['The buyer is using the solution effectively to achieve expected outcomes', 'Signing the contract', 'Drafting the proposal', 'Planning the roadmap'],
+            answer: 0,
+            explanation: 'Adoption is critical for realising promised benefits and satisfaction.'
+          },
+          {
+            question: 'Identifying add‑on opportunities requires…',
+            options: ['Understanding evolving buyer needs and successes', 'Offering discounts upfront', 'Focusing on competitor weaknesses', 'Avoiding conversation'],
+            answer: 0,
+            explanation: 'As the buyer’s environment changes, new challenges present opportunities for additional value.'
+          },
+          {
+            question: 'Knowledge transfer from sales to delivery ensures…',
+            options: ['A smooth implementation with clear expectations', 'Sales involvement ends immediately', 'New pricing discussion', 'Less accountability'],
+            answer: 0,
+            explanation: 'Sharing what was sold and why helps the delivery team meet the buyer’s expectations.'
+          },
+          {
+            question: 'Why is it important to document lessons learned in partnership?',
+            options: ['To improve future projects and relationships', 'To share secrets with competitors', 'To reduce support', 'To increase prices'],
+            answer: 0,
+            explanation: 'Capturing lessons allows continuous improvement internally and with the client.'
+          },
+          {
+            question: 'Tracking solution adoption can be done by…',
+            options: ['Analyzing usage metrics and gathering feedback', 'Ignoring results', 'Asking for more money', 'Sending monthly invoices only'],
+            answer: 0,
+            explanation: 'Metrics and feedback show whether the solution is delivering the expected value.'
+          },
+          {
+            question: 'A strong partnership is built on…',
+            options: ['Trust, shared vision and continual value delivery', 'Short‑term wins only', 'One‑sided communication', 'Frequent discounts'],
+            answer: 0,
+            explanation: 'Shared vision and ongoing value drive long‑term relationships.'
+          },
+          {
+            question: 'Post‑sale engagement should…',
+            options: ['Continue proactively to ensure ongoing success and uncover opportunities', 'Stop until renewal', 'Focus solely on upselling', 'Rely on automated emails only'],
+            answer: 0,
+            explanation: 'Staying engaged shows commitment and helps surface ways to add more value.'
+          }
+        ],
+        // FUSE certification path with 10 questions about follow‑up, upsell, support and education
+        FUSE: [
+          {
+            question: 'In the FUSE model, the F stands for…',
+            options: ['Follow‑up', 'Finance', 'Forecast', 'Finalize'],
+            answer: 0,
+            explanation: 'Follow‑up keeps the relationship warm and shows continued commitment.'
+          },
+          {
+            question: 'The U in FUSE represents…',
+            options: ['Upsell', 'Understand', 'Utilize', 'Unify'],
+            answer: 0,
+            explanation: 'Upsell is about offering additional value‑added solutions that meet evolving needs.'
+          },
+          {
+            question: 'The primary goal of the FUSE certification path is to…',
+            options: ['Ensure continuous customer success and expansion', 'Sign final contract', 'Negotiate pricing', 'Deliver hardware'],
+            answer: 0,
+            explanation: 'FUSE focuses on retention, growth and education after the initial sale.'
+          },
+          {
+            question: 'Which action reflects the Support aspect of FUSE?',
+            options: ['Providing ongoing training and assistance', 'Sending invoices only', 'Ignoring calls', 'Delaying responses'],
+            answer: 0,
+            explanation: 'Support is about ensuring the customer knows how to use and gain value from the solution.'
+          },
+          {
+            question: 'Educate in FUSE refers to…',
+            options: ['Keeping the customer informed about new capabilities', 'Teaching them your pricing strategy', 'Sharing competitor information', 'Explaining internal processes only'],
+            answer: 0,
+            explanation: 'Education helps customers get the most from your offering and fosters loyalty.'
+          },
+          {
+            question: 'A follow‑up after a project ensures…',
+            options: ['Customer satisfaction and identifies improvement areas', 'You can invoice more quickly', 'The buyer will not call again', 'No additional work is needed'],
+            answer: 0,
+            explanation: 'Checking in after delivery shows you care about outcomes and continuous improvement.'
+          },
+          {
+            question: 'Upselling should focus on…',
+            options: ['Additional value‑driven offerings that meet customer needs', 'Random products', 'Unrelated services', 'Lowering the overall price'],
+            answer: 0,
+            explanation: 'Upsells must align with the customer’s objectives to be successful.'
+          },
+          {
+            question: 'To maintain trust during FUSE, communications should be…',
+            options: ['Transparent and timely', 'Sporadic and vague', 'One‑sided', 'Hidden'],
+            answer: 0,
+            explanation: 'Open communication fosters a sense of partnership and builds long‑term loyalty.'
+          },
+          {
+            question: 'A success metric for FUSE is…',
+            options: ['Retention and growth of existing accounts', 'Number of cold calls', 'Volume of proposals sent', 'Negotiation length'],
+            answer: 0,
+            explanation: 'The goal of FUSE is to keep and expand your customer base over time.'
+          },
+          {
+            question: 'FUSE best practices include…',
+            options: ['Listening to customer feedback and acting on it', 'Sharing confidential data externally', 'Avoiding communication', 'Only focusing on new business'],
+            answer: 0,
+            explanation: 'Customer feedback guides improvements and identifies opportunities for growth.'
+          }
+        ],
+        // SVS8 learning path reflects the Shared Vision Selling maturity model, which integrates eight dimensions
+        // beyond the standard SVS stages. These questions assess understanding of the maturity framework and its elements.
+        SVS8: [
+          {
+            question: 'What is the primary purpose of the SVS 8 maturity model?',
+            options: [
+              'To integrate and assess maturity across all Shared Vision Selling elements',
+              'To replace the Discovery stage entirely',
+              'To set fixed prices for all deals',
+              'To delay decision making until year end'
+            ],
+            answer: 0,
+            explanation: 'SVS 8 helps sellers evaluate their overall maturity across multiple dimensions and unify their approach.'
+          },
+          {
+            question: 'Which of the following is NOT an SVS 8 maturity dimension?',
+            options: [
+              'Shared Vision Alignment',
+              'Innovation Foresight',
+              'Risk Management',
+              'Discount Maximization'
+            ],
+            answer: 3,
+            explanation: 'SVS 8 focuses on strategic and relational dimensions, not on maximising discounts.'
+          },
+          {
+            question: 'In SVS 8, “Relationship Depth” refers to…',
+            options: [
+              'The level of trust and influence you have with multiple stakeholders',
+              'The size of your sales territory',
+              'The number of calls made in a week',
+              'The price discount offered at proposal time'
+            ],
+            answer: 0,
+            explanation: 'Depth is about quality of relationships and access to decision makers, not operational metrics.'
+          },
+          {
+            question: 'Why is “Innovation Foresight” important in SVS 8?',
+            options: [
+              'It ensures your solutions align with future trends and evolving healthcare needs',
+              'It reduces your marketing budget',
+              'It shortens the sales cycle by skipping discovery',
+              'It focuses solely on product features'
+            ],
+            answer: 0,
+            explanation: 'Anticipating where the industry is headed helps position your offering as future‑proof and strategic.'
+          },
+          {
+            question: 'The “Risk Management” dimension encourages you to…',
+            options: [
+              'Identify and mitigate potential obstacles early in the sales process',
+              'Ignore buyer objections',
+              'Offer steep discounts at the start',
+              'Delay contract negotiation until after implementation'
+            ],
+            answer: 0,
+            explanation: 'Proactively addressing risks builds credibility and keeps deals on track.'
+          },
+          {
+            question: 'How does the “Growth & Expansion” dimension guide your actions?',
+            options: [
+              'By encouraging cross‑selling and upselling opportunities after initial success',
+              'By limiting engagement to a single project',
+              'By focusing only on new prospects and ignoring existing customers',
+              'By reducing post‑sale support to cut costs'
+            ],
+            answer: 0,
+            explanation: 'Growth & Expansion urges you to explore additional value within existing relationships.'
+          },
+          {
+            question: 'A completed SVS 8 maturity checklist should enable you to…',
+            options: [
+              'Identify strengths and gaps across all sales activities and plan next steps',
+              'Skip qualification entirely',
+              'Close deals without stakeholder buy‑in',
+              'Focus solely on price negotiation'
+            ],
+            answer: 0,
+            explanation: 'The checklist helps pinpoint where to improve and how to advance opportunities effectively.'
+          },
+          {
+            question: 'If your SVS 8 assessment reveals weak “Process Alignment,” what should you do?',
+            options: [
+              'Work with internal teams to align sales, marketing and delivery to the buyer journey',
+              'Avoid involving the product team in discussions',
+              'Lower your price to compensate for misalignment',
+              'Ignore the issue and continue as usual'
+            ],
+            answer: 0,
+            explanation: 'Aligning cross‑functional processes ensures a consistent experience for the buyer and smoother execution.'
+          },
+          {
+            question: 'What level of maturity does SVS 8 aim to achieve?',
+            options: [
+              'A collaborative, buyer‑centric approach across the entire customer life cycle',
+              'A transactional, vendor‑centric approach focused on quick wins',
+              'One‑time sales with no follow‑up',
+              'Marketing‑only campaigns with no sales involvement'
+            ],
+            answer: 0,
+            explanation: 'SVS 8 promotes collaboration and partnership, not a transactional mindset.'
+          },
+          {
+            question: 'The ultimate benefit of using the SVS 8 maturity model is…',
+            options: [
+              'To unify teams, improve win rates and deepen customer partnerships',
+              'To increase discounts offered during negotiation',
+              'To automate all interactions without human input',
+              'To shorten procurement processes artificially'
+            ],
+            answer: 0,
+            explanation: 'Applying SVS 8 provides a holistic view that drives better outcomes for both buyer and seller.'
+          }
+        ],
+        // RolePlay path remains defined separately; interactive scenarios are defined in rolePlayPath
+        RolePlay: []
+      };
+
+      // Role‑play scenario path guiding the user through a simulated healthcare sales cycle. Each entry
+      // contains narrative setup, a question and options. These scenarios reflect SalesSparx
+      // representatives approaching a healthcare system to sell technology and services.
+      const rolePlayPath = [
+        {
+          stage: 'Awareness',
+          narrative: 'ABC Health System is looking to modernise their operations. You are reaching out for the first time to introduce SalesSparx’s healthcare technology and services.',
+          question: 'How would you open the conversation to create awareness?',
+          options: [
+            'Highlight industry challenges and how your solutions address them.',
+            'Immediately ask for a meeting with the CEO.',
+            'Send a price list via email.',
+            'Discuss contract terms.'
+          ],
+          answer: 0,
+          explanation: 'In Awareness you position yourself as a thought partner by sharing insights before diving into specifics.',
+        },
+        {
+          stage: 'Discovery',
+          narrative: 'After initial interest, you schedule a discovery call with the director of operations at ABC Health. They mention long patient wait times and staff burnout.',
+          question: 'Which question will help you uncover needs?',
+          options: [
+            'Can you describe how these challenges impact your patient experience?',
+            'Are you ready to sign a contract?',
+            'How much money do you have to spend?',
+            'What do your competitors use?'
+          ],
+          answer: 0,
+          explanation: 'Discovery is about understanding impact and desired outcomes, not jumping to solutions or pricing.',
+        },
+        {
+          stage: 'Qualification',
+          narrative: 'The director is engaged but you haven’t met the hospital’s CFO or IT leadership.',
+          question: 'How do you qualify this opportunity?',
+          options: [
+            'Ask to involve the financial and technical decision makers.',
+            'Offer a discount to close quickly.',
+            'Assume the director can sign.',
+            'Ignore governance and continue with a proposal.'
+          ],
+          answer: 0,
+          explanation: 'Qualification means verifying access to authority, budget and timeline before progressing.',
+        },
+        {
+          stage: 'Ideation',
+          narrative: 'After meeting the broader team, you brainstorm solutions. The hospital struggles with scheduling and data analysis.',
+          question: 'What is the best approach during ideation?',
+          options: [
+            'Co‑create tailored solutions addressing scheduling and analytics.',
+            'Sell them your off‑the‑shelf product without changes.',
+            'Let the customer design everything while you observe.',
+            'Skip ideation and move to proposal.'
+          ],
+          answer: 0,
+          explanation: 'Ideation encourages joint exploration of options that directly address the hospital’s pain points.',
+        },
+        {
+          stage: 'Negotiation',
+          narrative: 'The hospital expresses concern over costs and asks for a discount.',
+          question: 'How do you handle the negotiation?',
+          options: [
+            'Reiterate value and explore flexible payment or phased implementation.',
+            'Agree to every concession requested.',
+            'Avoid the conversation and hope it goes away.',
+            'Lower the price without discussing value.'
+          ],
+          answer: 0,
+          explanation: 'Effective negotiation balances value with creative terms rather than indiscriminate discounts.',
+        }
+        ,
+        // Proposal scenario: ensure alignment on the solution and value
+        {
+          stage: 'Proposal',
+          narrative: 'Following the ideation sessions, you compile a formal proposal for ABC Health. It must capture the agreed‑upon solutions and showcase value.',
+          question: 'What ensures your proposal resonates with the client?',
+          options: [
+            'Use the client’s language and highlight agreed solutions and expected outcomes.',
+            'Copy a generic proposal template with minimal customization.',
+            'Focus solely on pricing and discounts.',
+            'Exclude context and jump straight to terms and conditions.'
+          ],
+          answer: 0,
+          explanation: 'A tailored proposal that reflects the customer’s language and the co‑created vision demonstrates understanding and value.',
+        },
+        // Partnership scenario: nurturing the relationship beyond the sale
+        {
+          stage: 'Partnership',
+          narrative: 'ABC Health has become a customer. To ensure a strong long‑term relationship, you need to nurture the partnership with ongoing engagement.',
+          question: 'Which action best strengthens the partnership?',
+          options: [
+            'Schedule regular reviews to measure outcomes and explore new opportunities.',
+            'Wait for the customer to reach out if they need anything.',
+            'Avoid discussing results to prevent extra work.',
+            'Limit communication to invoices only.'
+          ],
+          answer: 0,
+          explanation: 'Frequent check‑ins demonstrate commitment, ensure value delivery and open the door to expansion opportunities.',
+        }
+      ];
+
+      // Introductory messages for certain learning paths. These are displayed as the first item of the path
+      // and serve to set the scene for the role‑play scenarios. You can add more intros here as needed.
+      const pathIntro = {
+        RolePlay: 'Welcome to your role‑play! You are a sales representative at a technology and services provider for healthcare organisations. You are approaching ABC Health System, a large network of hospitals and clinics, to discuss how your solutions can improve their operations and patient care. Throughout this journey you will move through the SVS stages from awareness to partnership, making decisions that shape the outcome. Ready to begin?'
+        ,
+        Partnership: 'Welcome to the Partnership path! In this path you will explore how to transition knowledge from sales to delivery, drive adoption, conduct QBRs and identify new opportunities with your buyer.',
+        FUSE: 'Welcome to the FUSE certification path! This path focuses on follow‑up, upsell, support and education to expand and retain your customer relationships.',
+        SVS8: 'Welcome to the SVS 8 path! This learning path introduces the Shared Vision Selling maturity model, which evaluates your readiness across eight dimensions such as Shared Vision alignment, Relationship depth, Value realisation, Process alignment, Innovation foresight, Risk management, Growth & expansion and Long‑term partnership. Use this path to gauge your overall maturity and plan your next steps.'
+      };
+
+      /** Application state **/
+      let currentQuizIndex = 0;
+      let quizScore = 0;
+      let currentPlayerName = '';
+      let jeopardyScore = 0;
+      let jeopardyAnsweredCount = 0;
+      let boardState = []; // tracks answered clues per category
+      let activeQuestions = []; // questions currently in play (quiz or path)
+      let adminLoggedIn = false; // tracks whether the admin is logged in to view leaderboard
+      // Tracks the current mode (e.g., General Quiz, Discovery Path, Role‑Play Path) so that
+      // completion results can be recorded for the admin leaderboard.
+      let currentMode = '';
+
+      // Admin state is tracked via adminLoggedIn; removed duplicate isAdminLoggedIn.
+
+      /** Elements **/
+      const startJeopardyBtn = document.getElementById('startJeopardyBtn');
+      // General Quiz button removed; quiz now selected via modeSelect
+      const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
+      const backHomeBtn      = document.getElementById('backHomeBtn');
+      const quitQuizBtn      = document.getElementById('quitQuizBtn');
+      const nextQuizBtn      = document.getElementById('nextQuizBtn');
+      const quizQuestionEl   = document.getElementById('quizQuestion');
+      const quizOptionsEl    = document.getElementById('quizOptions');
+      const quizFeedbackEl   = document.getElementById('quizFeedback');
+      const quizProgressEl   = document.getElementById('quizProgress');
+      const jeopardyBoardEl  = document.getElementById('jeopardyBoard');
+      const jeopardyScoreEl  = document.getElementById('jeopardyScore');
+      const playerInfoEl     = document.getElementById('playerInfo');
+      const quitJeopardyBtn  = document.getElementById('quitJeopardyBtn');
+      const leaderboardBody  = document.getElementById('leaderboardBody');
+      const modalOverlay     = document.getElementById('modalOverlay');
+      const modalQuestionEl  = document.getElementById('modalQuestion');
+      const modalOptionsEl   = document.getElementById('modalOptions');
+      const modalFeedbackEl  = document.getElementById('modalFeedback');
+      const modalNextBtn     = document.getElementById('modalNextBtn');
+
+      // Progress and narrative elements for quiz/path screens
+      const progressBar     = document.getElementById('progressBar');
+      const quizNarrativeEl = document.getElementById('quizNarrative');
+
+      // Dashboard elements for score and progress
+      const quizScoreDisplay    = document.getElementById('quizScoreDisplay');
+      const quizProgressDisplay = document.getElementById('quizProgressDisplay');
+
+      // Admin login form elements
+      const adminUsername   = document.getElementById('adminUsername');
+      const adminPassword   = document.getElementById('adminPassword');
+      const loginError      = document.getElementById('loginError');
+      const adminLoginBtn   = document.getElementById('adminLoginBtn');
+      const adminCancelBtn  = document.getElementById('adminCancelBtn');
+
+      // Learner dashboard elements
+      const dashboardBtn      = document.getElementById('dashboardBtn');
+      const dashboardBody     = document.getElementById('dashboardBody');
+      const dashboardTable    = document.getElementById('dashboardTable');
+      const dashboardMessage  = document.getElementById('dashboardMessage');
+      const dashboardBackBtn  = document.getElementById('dashboardBackBtn');
+
+      // Role-play button
+      // New: player name input and mode select
+      const playerNameInput  = document.getElementById('playerNameInput');
+      const modeSelect       = document.getElementById('modeSelect');
+      const startSelectedBtn = document.getElementById('startSelectedBtn');
+      const startRolePlayBtn = document.getElementById('startRolePlayBtn');
+
+      /** Audio (Jeopardy theme placeholder) **/
+      let audioCtx;
+      let themeInterval;
+      function playJeopardyTheme() {
+        if (audioCtx) return; // already playing
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Simple beep pattern: play a sine wave for 0.2s, pause 0.6s, repeat.
+        function beep() {
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.type = 'sine';
+          oscillator.frequency.value = 523.25; // C5 note
+          gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.2);
+        }
+        themeInterval = setInterval(beep, 800);
+      }
+      function stopJeopardyTheme() {
+        if (themeInterval) clearInterval(themeInterval);
+        themeInterval = null;
+        if (audioCtx) {
+          audioCtx.close();
+          audioCtx = null;
+        }
+      }
+
+      /** Quiz Mode Functions **/
+      // Ensure a player name has been provided; show alert if not. Returns true/false.
+      function ensureName() {
+        const name = playerNameInput.value.trim();
+        if (!name) {
+          alert('Please enter your name to start.');
+          return false;
+        }
+        currentPlayerName = name;
+        return true;
+      }
+      function startQuiz() {
+        if (!ensureName()) return;
+        currentQuizIndex = 0;
+        quizScore = 0;
+        // Set the mode so that completion can be recorded later
+        currentMode = 'General Quiz';
+        // Use all quiz questions for general quiz
+        // Randomize question order and shuffle options within each question
+        activeQuestions = shuffle(quizQuestions.map(q => shuffleQuestionOptions(q)));
+        // Set header back to generic title
+        const headerEl = document.getElementById('quizHeader');
+        if (headerEl) headerEl.textContent = 'Quiz Mode';
+        showScreen('quizScreen');
+        nextQuizBtn.style.display = 'none';
+        quizFeedbackEl.textContent = '';
+        renderQuizQuestion();
+        // Set quit button text for general quiz
+        quitQuizBtn.textContent = 'Quit Quiz';
+
+        // Reset dashboard
+        if (quizScoreDisplay) quizScoreDisplay.textContent = '0';
+        const total = activeQuestions.filter(q => q.type !== 'info').length;
+        if (quizProgressDisplay) quizProgressDisplay.textContent = `0/${total}`;
+        progressBar.style.width = '0%';
+      }
+      function renderQuizQuestion() {
+        const questionObj = activeQuestions[currentQuizIndex];
+        // If this is an informational introduction, show the intro and a Begin button
+        if (questionObj.type === 'info') {
+          quizProgressEl.textContent = '';
+          quizQuestionEl.textContent = questionObj.intro;
+          quizOptionsEl.innerHTML = '';
+          quizFeedbackEl.textContent = '';
+          nextQuizBtn.style.display = 'none';
+          const startBtn = document.createElement('button');
+          startBtn.className = 'btn';
+          startBtn.textContent = 'Begin';
+          startBtn.addEventListener('click', nextQuizStep);
+          quizOptionsEl.appendChild(startBtn);
+          return;
+        }
+        // Otherwise proceed with regular question rendering
+        // Compute progress ignoring any informational intro questions
+        const answeredCount = activeQuestions.slice(0, currentQuizIndex).filter(q => q.type !== 'info').length;
+        const totalCount   = activeQuestions.filter(q => q.type !== 'info').length;
+        quizProgressEl.textContent = `Question ${answeredCount + 1} of ${totalCount}`;
+        // Update dashboard and progress bar
+        if (typeof quizScoreDisplay !== 'undefined' && typeof quizProgressDisplay !== 'undefined') {
+          quizScoreDisplay.textContent    = quizScore;
+          quizProgressDisplay.textContent = `${answeredCount}/${totalCount}`;
+          const percent = totalCount ? (answeredCount / totalCount) * 100 : 0;
+          progressBar.style.width = percent + '%';
+        }
+        // If this question contains narrative (for role‑play), display it; otherwise clear
+        if (questionObj.narrative) {
+          quizNarrativeEl.textContent = questionObj.narrative;
+        } else {
+          quizNarrativeEl.textContent = '';
+        }
+        quizQuestionEl.textContent = questionObj.question;
+        quizOptionsEl.innerHTML = '';
+        quizFeedbackEl.textContent = '';
+        nextQuizBtn.style.display = 'none';
+        // Render options based on question type
+        if (questionObj.type === 'trueFalse') {
+          const trueBtn = document.createElement('button');
+          trueBtn.className = 'option-btn';
+          trueBtn.textContent = 'True';
+          trueBtn.addEventListener('click', () => handleQuizAnswer(true));
+          const falseBtn = document.createElement('button');
+          falseBtn.className = 'option-btn';
+          falseBtn.textContent = 'False';
+          falseBtn.addEventListener('click', () => handleQuizAnswer(false));
+          quizOptionsEl.appendChild(trueBtn);
+          quizOptionsEl.appendChild(falseBtn);
+        } else {
+          questionObj.options.forEach((opt, idx) => {
+            const optBtn = document.createElement('button');
+            optBtn.className = 'option-btn';
+            optBtn.textContent = opt;
+            optBtn.addEventListener('click', () => handleQuizAnswer(idx));
+            quizOptionsEl.appendChild(optBtn);
+          });
+        }
+      }
+      function handleQuizAnswer(selected) {
+        const questionObj = activeQuestions[currentQuizIndex];
+        let correct;
+        if (questionObj.type === 'trueFalse') {
+          correct = (selected === questionObj.answer);
+        } else {
+          correct = (selected === questionObj.answer);
+        }
+        // update score
+        if (correct) {
+          quizScore++;
+          quizFeedbackEl.style.color = varToColor('--color-yellow');
+          quizFeedbackEl.textContent = 'Correct!';
+        } else {
+          quizFeedbackEl.style.color = varToColor('--color-red');
+          quizFeedbackEl.textContent = 'Incorrect. ' + (questionObj.explanation || '');
+        }
+        // update dashboard score display
+        if (quizScoreDisplay) {
+          quizScoreDisplay.textContent = quizScore;
+        }
+        // disable option buttons to prevent multiple answers
+        Array.from(quizOptionsEl.children).forEach(btn => {
+          btn.disabled = true;
+        });
+        // show Next or Finish
+        nextQuizBtn.style.display = 'inline-block';
+        if (currentQuizIndex >= activeQuestions.length - 1) {
+          nextQuizBtn.textContent = 'Finish';
+        } else {
+          nextQuizBtn.textContent = 'Next';
+        }
+      }
+      function nextQuizStep() {
+        currentQuizIndex++;
+        if (currentQuizIndex < activeQuestions.length) {
+          renderQuizQuestion();
+        } else {
+          finishQuiz();
+        }
+      }
+      function finishQuiz() {
+        // calculate percentage and pass/fail
+        // exclude informational intro questions from scoring
+        const totalQuestions = activeQuestions.filter(q => q.type !== 'info').length;
+        const percent = totalQuestions ? Math.round((quizScore / totalQuestions) * 100) : 0;
+        const passed = percent >= 80;
+        quizQuestionEl.textContent = passed ? `You passed! Score: ${percent}%` : `You scored ${percent}%. Keep practicing!`;
+        quizOptionsEl.innerHTML = '';
+        quizFeedbackEl.textContent = '';
+        nextQuizBtn.style.display = 'none';
+        // Save quiz percentages to a generic array (legacy)
+        const quizScores = JSON.parse(localStorage.getItem('quizScores') || '[]');
+        quizScores.push({ score: percent, date: new Date().toISOString() });
+        localStorage.setItem('quizScores', JSON.stringify(quizScores));
+        // Record learner completion for admin leaderboard. We record only when a mode is defined and
+        // there are questions answered (excluding informational intros). We also record whether the
+        // learner passed. For Jeopardy, this will be handled separately.
+        if (currentMode) {
+          const learnerRecords = JSON.parse(localStorage.getItem('learnerRecords') || '[]');
+          learnerRecords.push({
+            name: currentPlayerName,
+            mode: currentMode,
+            result: percent, // For quizzes and learning paths this is the percent score
+            pass: passed,
+            date: new Date().toISOString()
+          });
+          localStorage.setItem('learnerRecords', JSON.stringify(learnerRecords));
+        }
+        // Update dashboard to reflect final score and completion
+        if (typeof quizScoreDisplay !== 'undefined' && typeof quizProgressDisplay !== 'undefined') {
+          quizScoreDisplay.textContent    = quizScore;
+          quizProgressDisplay.textContent = `${totalQuestions}/${totalQuestions}`;
+          progressBar.style.width = '100%';
+        }
+      }
+
+      /** Jeopardy Mode Functions **/
+      function startJeopardy() {
+        // Use the name entered on the home screen
+        if (!ensureName()) return;
+        currentPlayerName = playerNameInput.value.trim();
+        playerInfoEl.textContent = `Player: ${currentPlayerName}`;
+        jeopardyScore = 0;
+        jeopardyAnsweredCount = 0;
+        boardState = modules.map(module => module.clues.map(() => false));
+        jeopardyScoreEl.textContent = 'Score: 0';
+        buildJeopardyBoard();
+        showScreen('jeopardyScreen');
+        playJeopardyTheme();
+      }
+      // Build the Jeopardy board grid dynamically
+      function buildJeopardyBoard() {
+        const cols = modules.length;
+        // Setup grid template columns
+        const grid = document.createElement('div');
+        grid.className = 'board-grid';
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        // Header row
+        modules.forEach((module, colIdx) => {
+          const header = document.createElement('div');
+          header.className = 'board-header';
+          header.textContent = module.name;
+          grid.appendChild(header);
+        });
+        // Clue rows
+        for (let row = 0; row < modules[0].clues.length; row++) {
+          modules.forEach((module, colIdx) => {
+            const cell = document.createElement('div');
+            cell.className = 'board-cell';
+            const clue = module.clues[row];
+            cell.textContent = clue.value;
+            cell.dataset.moduleIndex = colIdx;
+            cell.dataset.clueIndex = row;
+            cell.addEventListener('click', () => handleClueSelection(colIdx, row));
+            grid.appendChild(cell);
+          });
+        }
+        // Clear previous board
+        jeopardyBoardEl.innerHTML = '';
+        jeopardyBoardEl.appendChild(grid);
+      }
+      // Handle selection of a clue
+      function handleClueSelection(moduleIndex, clueIndex) {
+        if (boardState[moduleIndex][clueIndex]) return; // already answered
+        const clue = modules[moduleIndex].clues[clueIndex];
+        boardState[moduleIndex][clueIndex] = true;
+        // mark cell as answered visually
+        const gridCells = jeopardyBoardEl.querySelectorAll('.board-cell');
+        const cellIndex = (clueIndex * modules.length) + moduleIndex;
+        const cell = gridCells[cellIndex];
+        cell.classList.add('answered');
+        // Show modal with question and randomized answer options. We create a local copy of the clue
+        // where the options are shuffled and the answer index is updated accordingly. This prevents
+        // the correct answer from always being in the first position.
+        modalQuestionEl.textContent = clue.question;
+        modalOptionsEl.innerHTML = '';
+        modalFeedbackEl.textContent = '';
+        modalNextBtn.style.display = 'none';
+        // Randomize options and compute new correct index
+        const optIndices = clue.options.map((_, i) => i);
+        shuffle(optIndices);
+        const shuffledOpts = optIndices.map(i => clue.options[i]);
+        const correctIndex = optIndices.indexOf(clue.answer);
+        shuffledOpts.forEach((opt, idx) => {
+          const optBtn = document.createElement('button');
+          optBtn.className = 'option-btn';
+          // For Jeopardy, present the answer text without automatically prefixing "What is"
+          // to allow a cleaner multiple‑choice format. Learners should still choose the correct response.
+          optBtn.textContent = opt;
+          // Pass a pseudo‑clue object with the updated answer index and value
+          optBtn.addEventListener('click', () => handleClueAnswer({ answer: correctIndex, value: clue.value }, idx));
+          modalOptionsEl.appendChild(optBtn);
+        });
+        modalOverlay.classList.add('active');
+      }
+      function handleClueAnswer(clue, selectedIdx) {
+        const correct = (selectedIdx === clue.answer);
+        if (correct) {
+          jeopardyScore += clue.value;
+          modalFeedbackEl.style.color = varToColor('--color-yellow');
+          modalFeedbackEl.textContent = `Correct! +${clue.value} points.`;
+        } else {
+          const penalty = Math.floor(clue.value / 2);
+          jeopardyScore -= penalty;
+          modalFeedbackEl.style.color = varToColor('--color-red');
+          modalFeedbackEl.textContent = `Incorrect. −${penalty} points.`;
+        }
+        jeopardyScoreEl.textContent = `Score: ${jeopardyScore}`;
+        // disable all option buttons
+        Array.from(modalOptionsEl.children).forEach(btn => { btn.disabled = true; });
+        modalNextBtn.style.display = 'inline-block';
+        modalNextBtn.textContent = 'Close';
+        modalNextBtn.onclick = () => {
+          modalOverlay.classList.remove('active');
+          jeopardyAnsweredCount++;
+          if (jeopardyAnsweredCount === modules.length * modules[0].clues.length) {
+            endJeopardyGame();
+          }
+        };
+      }
+      function endJeopardyGame() {
+        stopJeopardyTheme();
+        const leaderboard = JSON.parse(localStorage.getItem('jeopardyLeaderboard') || '[]');
+        leaderboard.push({ name: currentPlayerName, score: jeopardyScore, date: new Date().toISOString() });
+        leaderboard.sort((a, b) => b.score - a.score);
+        localStorage.setItem('jeopardyLeaderboard', JSON.stringify(leaderboard.slice(0, 10)));
+
+        // Record learner completion for admin leaderboard. Jeopardy is considered complete and passed
+        // when the game ends. We use the raw Jeopardy score as the result and set pass to true.
+        const learnerRecords = JSON.parse(localStorage.getItem('learnerRecords') || '[]');
+        learnerRecords.push({
+          name: currentPlayerName,
+          mode: 'Jeopardy',
+          result: jeopardyScore,
+          pass: true,
+          date: new Date().toISOString()
+        });
+        localStorage.setItem('learnerRecords', JSON.stringify(learnerRecords));
+        const summary = window.confirm(`Game over! Your final score is ${jeopardyScore}. Would you like to view the leaderboard?`);
+        if (summary) {
+          showLeaderboard();
+        } else {
+          showScreen('homeScreen');
+        }
+      }
+
+      /** Leaderboard Functions **/
+      function showLeaderboard() {
+        // Load all learner records. These include quiz paths, role‑play and Jeopardy completions.
+        const records = JSON.parse(localStorage.getItem('learnerRecords') || '[]');
+        // Sort by date descending (newest first)
+        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        leaderboardBody.innerHTML = '';
+        records.forEach((entry, idx) => {
+          const tr = document.createElement('tr');
+          const rankTd = document.createElement('td');
+          rankTd.textContent = idx + 1;
+          const nameTd = document.createElement('td');
+          nameTd.textContent = entry.name;
+          const modeTd = document.createElement('td');
+          modeTd.textContent = entry.mode;
+          const resultTd = document.createElement('td');
+          // If result is a percent (quiz or path) append %; otherwise show points
+          if (entry.mode === 'Jeopardy') {
+            resultTd.textContent = `${entry.result}`;
+          } else {
+            resultTd.textContent = `${entry.result}%`;
+          }
+          const statusTd = document.createElement('td');
+          statusTd.textContent = entry.pass ? 'Passed' : 'Failed';
+          const dateTd = document.createElement('td');
+          dateTd.textContent = formatDate(entry.date);
+          tr.appendChild(rankTd);
+          tr.appendChild(nameTd);
+          tr.appendChild(modeTd);
+          tr.appendChild(resultTd);
+          tr.appendChild(statusTd);
+          tr.appendChild(dateTd);
+          leaderboardBody.appendChild(tr);
+        });
+        showScreen('leaderboardScreen');
+      }
+
+      /** Learner Dashboard Functions **/
+      function showDashboard() {
+        // Ensure a player name is entered
+        if (!ensureName()) return;
+        const records = JSON.parse(localStorage.getItem('learnerRecords') || '[]');
+        const myName  = currentPlayerName;
+        const myRecords = records.filter(r => r.name === myName);
+        // Clear previous rows
+        dashboardBody.innerHTML = '';
+        if (myRecords.length === 0) {
+          dashboardTable.style.display = 'none';
+          dashboardMessage.textContent = 'You have not completed any activities yet. Play a game or complete a path to see results here.';
+        } else {
+          dashboardTable.style.display = 'table';
+          dashboardMessage.textContent = '';
+          // Sort by most recent
+          myRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+          myRecords.forEach(rec => {
+            const tr = document.createElement('tr');
+            const modeTd = document.createElement('td');
+            modeTd.textContent = rec.mode;
+            const resultTd = document.createElement('td');
+            resultTd.textContent = rec.mode === 'Jeopardy' ? `${rec.result}` : `${rec.result}%`;
+            const statusTd = document.createElement('td');
+            statusTd.textContent = rec.pass ? 'Passed' : 'Failed';
+            const dateTd = document.createElement('td');
+            dateTd.textContent = formatDate(rec.date);
+            tr.appendChild(modeTd);
+            tr.appendChild(resultTd);
+            tr.appendChild(statusTd);
+            tr.appendChild(dateTd);
+            dashboardBody.appendChild(tr);
+          });
+        }
+        showScreen('dashboardScreen');
+      }
+
+      // Handle view leaderboard click: require admin login
+      function handleViewLeaderboard() {
+        if (adminLoggedIn) {
+          showLeaderboard();
+        } else {
+          // reset login form
+          adminUsername.value = '';
+          adminPassword.value = '';
+          loginError.textContent = '';
+          showScreen('adminLoginScreen');
+        }
+      }
+
+      /** Event listeners **/
+      // Attach Jeopardy and leaderboard events
+      startJeopardyBtn.addEventListener('click', startJeopardy);
+      viewLeaderboardBtn.addEventListener('click', handleViewLeaderboard);
+      backHomeBtn.addEventListener('click', () => { showScreen('homeScreen'); });
+      quitQuizBtn.addEventListener('click', () => {
+        const isPath = quitQuizBtn.textContent.toLowerCase().includes('path');
+        const msg = isPath ? 'Are you sure you want to quit the learning path?' : 'Are you sure you want to quit the quiz?';
+        if (confirm(msg)) {
+          showScreen('homeScreen');
+        }
+      });
+      nextQuizBtn.addEventListener('click', nextQuizStep);
+      quitJeopardyBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to quit the game?')) {
+          stopJeopardyTheme();
+          showScreen('homeScreen');
+        }
+      });
+
+      // Dashboard button events
+      dashboardBtn.addEventListener('click', showDashboard);
+      dashboardBackBtn.addEventListener('click', () => { showScreen('homeScreen'); });
+
+      // (Admin login events attached at bottom of script; duplicate removed)
+
+      // Start learning path: sets activeQuestions to the selected path
+      function startLearningPath(pathName) {
+        if (!ensureName()) return;
+        currentQuizIndex = 0;
+        quizScore = 0;
+        // Set current mode for leaderboard recording (e.g., "Discovery Path")
+        currentMode = `${pathName} Path`;
+        // Build a fresh array of questions for this path
+        // Clone and randomize options within each question so that answers appear in varied positions
+        const questions = learningPaths[pathName].map(q => shuffleQuestionOptions(Object.assign({}, q)));
+        // If this path has an introductory message, prepend an info object
+        if (pathIntro[pathName]) {
+          activeQuestions = [ { type: 'info', intro: pathIntro[pathName] } ].concat(questions);
+        } else {
+          activeQuestions = questions;
+        }
+        // Update header to show path name
+        const headerEl = document.getElementById('quizHeader');
+        if (headerEl) headerEl.textContent = `${pathName} Path`;
+        showScreen('quizScreen');
+        nextQuizBtn.style.display = 'none';
+        quizFeedbackEl.textContent = '';
+        renderQuizQuestion();
+        // Reset dashboard for the learning path
+        if (quizScoreDisplay) quizScoreDisplay.textContent = '0';
+        const totalLP = activeQuestions.filter(q => q.type !== 'info').length;
+        if (quizProgressDisplay) quizProgressDisplay.textContent = `0/${totalLP}`;
+        progressBar.style.width = '0%';
+        // Set quit button text appropriate for learning paths
+        quitQuizBtn.textContent = 'Quit Path';
+      }
+
+      // Interactive learning: launch quiz or selected path
+      startSelectedBtn.addEventListener('click', () => {
+        if (!ensureName()) return;
+        const selected = modeSelect.value;
+        if (selected === 'GeneralQuiz') {
+          startQuiz();
+        } else {
+          startLearningPath(selected);
+        }
+      });
+
+      // Role‑play path start
+      function startRolePlay() {
+        if (!ensureName()) return;
+        currentQuizIndex = 0;
+        quizScore = 0;
+        // Set mode for leaderboard (Role‑Play Path)
+        currentMode = 'Role‑Play Path';
+        // Copy role‑play scenarios into activeQuestions and prepend an introduction
+        const rpIntro = pathIntro.RolePlay || '';
+        // Insert an informational intro item at the start if intro exists
+        if (rpIntro) {
+          activeQuestions = [ { type: 'info', intro: rpIntro } ].concat(rolePlayPath.map(q => Object.assign({}, q)));
+        } else {
+          activeQuestions = rolePlayPath.map(q => Object.assign({}, q));
+        }
+        const headerEl = document.getElementById('quizHeader');
+        if (headerEl) headerEl.textContent = 'Role‑Play Scenario';
+        showScreen('quizScreen');
+        nextQuizBtn.style.display = 'none';
+        quizFeedbackEl.textContent = '';
+        renderQuizQuestion();
+        // Reset dashboard for role‑play path
+        if (quizScoreDisplay) quizScoreDisplay.textContent = '0';
+        const totalRP = activeQuestions.filter(q => q.type !== 'info').length;
+        if (quizProgressDisplay) quizProgressDisplay.textContent = `0/${totalRP}`;
+        progressBar.style.width = '0%';
+        // Set quit button text for role‑play
+        quitQuizBtn.textContent = 'Quit Path';
+      }
+      // Attach role‑play button event
+      startRolePlayBtn.addEventListener('click', startRolePlay);
+
+      // Attach admin login buttons
+      adminLoginBtn?.addEventListener('click', () => {
+        const user = adminUsername.value.trim();
+        const pass = adminPassword.value;
+        if (user === 'salessparx' && pass === 'salessparx2025') {
+          adminLoggedIn = true;
+          loginError.textContent = '';
+          showLeaderboard();
+        } else {
+          loginError.textContent = 'Invalid credentials';
+        }
+      });
+      adminCancelBtn?.addEventListener('click', () => {
+        // Reset fields and go back home
+        adminUsername.value = '';
+        adminPassword.value = '';
+        loginError.textContent = '';
+        showScreen('homeScreen');
+      });
+
+      /** Helper to convert CSS variable values to actual colours **/
+      function varToColor(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      }
+    })();
+  </script>
+</body>
+</html>
